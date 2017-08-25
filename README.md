@@ -1,3 +1,8 @@
+# Dockerized Version with auto configuration
+
+This is a fork of https://github.com/fireice-uk/xmr-stak-cpu
+It is a dockerized version with automatic cpu configuration (no need to change cpu config in config.txt on every container)
+
 # XMR-Stak-CPU - Monero mining software
 
 XMR-Stak is a universal Stratum pool miner. This is the CPU-mining version; there is also an [AMD GPU version](https://github.com/fireice-uk/xmr-stak-amd) and an [NVIDA GPU version](https://github.com/fireice-uk/xmr-stak-nvidia)
