@@ -2,8 +2,9 @@ FROM ubuntu:16.04
 
 RUN apt-get update && apt-get -y upgrade && apt-get -y install libssl-dev cmake build-essential libhwloc-dev
 
-COPY src /opt/xmon
-RUN cd /opt/xmon && cmake -DMICROHTTPD_ENABLE=OFF . && make install
+COPY src /app
+RUN cd /app && cmake -DMICROHTTPD_ENABLE=OFF . && make install
 
-WORKDIR /opt/xmon/bin
-ENTRYPOINT ["/opt/xmon/bin/xmr-stak-cpu"]
+ENV PATH /app/bin:$PATH
+WORKDIR /app/bin
+ENTRYPOINT ["xmr-stak-cpu"]
