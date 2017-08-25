@@ -3,6 +3,7 @@
 #include "console.h"
 #include <hwloc.h>
 #include <stdio.h>
+#include "jconf.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -32,6 +33,7 @@ public:
 		try
 		{
 			std::vector<hwloc_obj_t> tlcs;
+			std::vector<jconf::thd_cfg> cpu_threads_conf;
 			tlcs.reserve(16);
 			results.reserve(16);
 
@@ -53,8 +55,15 @@ public:
 				snprintf(str, sizeof(str), "    { \"low_power_mode\" : %s, \"no_prefetch\" : true, \"affine_to_cpu\" : %u },\n",
 					(id & 0x8000000) != 0 ? "true" : "false", id & 0x7FFFFFF);
 				printer::inst()->print_str(str);
+
+				jconf::thd_cfg thd;
+				thd.bDoubleMode = (id & 0x8000000) != 0;
+				thd.bNoPrefetch = true;
+				thd.iCpuAff = id & 0x7FFFFFF;
+				cpu_threads_conf.push_back(thd);
 			}
 
+			jconf::inst()->setCpuThreadsConf(cpu_threads_conf);
 			printer::inst()->print_str("],\n\n**************** Copy&Paste END ****************\n");
 		}
 		catch(const std::runtime_error& err)

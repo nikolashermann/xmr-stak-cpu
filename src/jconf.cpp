@@ -115,152 +115,107 @@ jconf::jconf()
 
 bool jconf::GetThreadConfig(size_t id, thd_cfg &cfg)
 {
-	if(!prv->configValues[aCpuThreadsConf]->IsArray())
+	if(id >= GetThreadCount())
 		return false;
 
-	if(id >= prv->configValues[aCpuThreadsConf]->Size())
-		return false;
-
-	const Value& oThdConf = prv->configValues[aCpuThreadsConf]->GetArray()[id];
-
-	if(!oThdConf.IsObject())
-		return false;
-
-	const Value *mode, *no_prefetch, *aff;
-	mode = GetObjectMember(oThdConf, "low_power_mode");
-	no_prefetch = GetObjectMember(oThdConf, "no_prefetch");
-	aff = GetObjectMember(oThdConf, "affine_to_cpu");
-
-	if(mode == nullptr || no_prefetch == nullptr || aff == nullptr)
-		return false;
-
-	if(!mode->IsBool() || !no_prefetch->IsBool())
-		return false;
-
-	if(!aff->IsNumber() && !aff->IsBool())
-		return false;
-
-	if(aff->IsNumber() && aff->GetInt64() < 0)
-		return false;
-
-	cfg.bDoubleMode = mode->GetBool();
-	cfg.bNoPrefetch = no_prefetch->GetBool();
-
-	if(aff->IsNumber())
-		cfg.iCpuAff = aff->GetInt64();
-	else
-		cfg.iCpuAff = -1;
+	cfg = cfgItems->aCpuThreadsConf[id];
 
 	return true;
 }
 
 jconf::slow_mem_cfg jconf::GetSlowMemSetting()
 {
-	const char* opt = prv->configValues[sUseSlowMem]->GetString();
-
-	if(strcasecmp(opt, "always") == 0)
-		return always_use;
-	else if(strcasecmp(opt, "no_mlck") == 0)
-		return no_mlck;
-	else if(strcasecmp(opt, "warn") == 0)
-		return print_warning;
-	else if(strcasecmp(opt, "never") == 0)
-		return never_use;
-	else
-		return unknown_value;
+	return cfgItems->sUseSlowMem;
 }
 
 bool jconf::GetTlsSetting()
 {
-	return prv->configValues[bTlsMode]->GetBool();
+	return cfgItems->bTlsMode;
 }
 
 bool jconf::TlsSecureAlgos()
 {
-	return prv->configValues[bTlsSecureAlgo]->GetBool();
+	return cfgItems->bTlsSecureAlgo;
 }
 
 const char* jconf::GetTlsFingerprint()
 {
-	return prv->configValues[sTlsFingerprint]->GetString();
+	return cfgItems->sTlsFingerprint;
 }
 
 const char* jconf::GetPoolAddress()
 {
-	return prv->configValues[sPoolAddr]->GetString();
+	return cfgItems->sPoolAddr;
 }
 
 const char* jconf::GetPoolPwd()
 {
-	return prv->configValues[sPoolPwd]->GetString();
+	return cfgItems->sPoolPwd;
 }
 
 const char* jconf::GetWalletAddress()
 {
-	return prv->configValues[sWalletAddr]->GetString();
+	return cfgItems->sWalletAddr;
 }
 
 bool jconf::PreferIpv4()
 {
-	return prv->configValues[bPreferIpv4]->GetBool();
+	return cfgItems->bPreferIpv4;
 }
 
 size_t jconf::GetThreadCount()
 {
-	if(prv->configValues[aCpuThreadsConf]->IsArray())
-		return prv->configValues[aCpuThreadsConf]->Size();
-	else
-		return 0;
+	return cfgItems->aCpuThreadsConf.size();
 }
 
 bool jconf::NeedsAutoconf()
 {
-	return !prv->configValues[aCpuThreadsConf]->IsArray();
+	return GetThreadCount() == 0;
 }
 
 uint64_t jconf::GetCallTimeout()
 {
-	return prv->configValues[iCallTimeout]->GetUint64();
+	return cfgItems->iCallTimeout;
 }
 
 uint64_t jconf::GetNetRetry()
 {
-	return prv->configValues[iNetRetry]->GetUint64();
+	return cfgItems->iNetRetry;
 }
 
 uint64_t jconf::GetGiveUpLimit()
 {
-	return prv->configValues[iGiveUpLimit]->GetUint64();
+	return cfgItems->iGiveUpLimit;
 }
 
 uint64_t jconf::GetVerboseLevel()
 {
-	return prv->configValues[iVerboseLevel]->GetUint64();
+	return cfgItems->iVerboseLevel;
 }
 
 uint64_t jconf::GetAutohashTime()
 {
-	return prv->configValues[iAutohashTime]->GetUint64();
+	return cfgItems->iAutohashTime;
 }
 
 uint16_t jconf::GetHttpdPort()
 {
-	return prv->configValues[iHttpdPort]->GetUint();
+	return cfgItems->iHttpdPort;
 }
 
 bool jconf::NiceHashMode()
 {
-	return prv->configValues[bNiceHashMode]->GetBool();
+	return cfgItems->bNiceHashMode;
 }
 
 bool jconf::DaemonMode()
 {
-	return prv->configValues[bDaemonMode]->GetBool();
+	return cfgItems->bDaemonMode;
 }
 
 const char* jconf::GetOutputFile()
 {
-	return prv->configValues[sOutputFile]->GetString();
+	return cfgItems->sOutputFile;
 }
 
 void jconf::cpuid(uint32_t eax, int32_t ecx, int32_t val[4])
@@ -389,6 +344,37 @@ bool jconf::parse_config(const char* sFilename)
 		}
 	}
 
+	parseCpuThreadsConf();
+
+	const char* opt = prv->configValues[sUseSlowMem]->GetString();
+	if(strcasecmp(opt, "always") == 0)
+		cfgItems->sUseSlowMem =  always_use;
+	else if(strcasecmp(opt, "no_mlck") == 0)
+		cfgItems->sUseSlowMem =  no_mlck;
+	else if(strcasecmp(opt, "warn") == 0)
+		cfgItems->sUseSlowMem =  print_warning;
+	else if(strcasecmp(opt, "never") == 0)
+		cfgItems->sUseSlowMem =  never_use;
+	else
+		cfgItems->sUseSlowMem =  unknown_value;
+
+	cfgItems->bNiceHashMode = prv->configValues[bNiceHashMode]->GetBool();
+	cfgItems->bTlsMode = prv->configValues[bTlsMode]->GetBool();
+	cfgItems->bTlsSecureAlgo = prv->configValues[bTlsSecureAlgo]->GetBool();
+	cfgItems->sTlsFingerprint = prv->configValues[sTlsFingerprint]->GetString();
+	cfgItems->sPoolAddr = prv->configValues[sPoolAddr]->GetString();
+	cfgItems->sWalletAddr = prv->configValues[sWalletAddr]->GetString();
+	cfgItems->sPoolPwd = prv->configValues[sPoolPwd]->GetString();
+	cfgItems->iCallTimeout = prv->configValues[iCallTimeout]->GetUint64();
+	cfgItems->iNetRetry = prv->configValues[iNetRetry]->GetUint64();
+	cfgItems->iGiveUpLimit = prv->configValues[iGiveUpLimit]->GetUint64();
+	cfgItems->iVerboseLevel = prv->configValues[iVerboseLevel]->GetUint64();
+	cfgItems->iAutohashTime = prv->configValues[iAutohashTime]->GetUint64();
+	cfgItems->bDaemonMode = prv->configValues[bDaemonMode]->GetBool();
+	cfgItems->sOutputFile = prv->configValues[sOutputFile]->GetString();
+	cfgItems->iHttpdPort = prv->configValues[iHttpdPort]->GetUint();
+	cfgItems->bPreferIpv4 = prv->configValues[bPreferIpv4]->GetBool();
+
 	thd_cfg c;
 	for(size_t i=0; i < GetThreadCount(); i++)
 	{
@@ -455,7 +441,7 @@ bool jconf::parse_config(const char* sFilename)
 	printer::inst()->set_verbose_level(prv->configValues[iVerboseLevel]->GetUint64());
 
 	if(NeedsAutoconf())
-		return true;
+	return true;
 
 	if(prv->configValues[bAesOverride]->IsBool())
 		bHaveAes = prv->configValues[bAesOverride]->GetBool();
@@ -464,4 +450,50 @@ bool jconf::parse_config(const char* sFilename)
 		printer::inst()->print_msg(L0, "Your CPU doesn't support hardware AES. Don't expect high hashrates.");
 
 	return true;
+}
+
+void jconf::parseCpuThreadsConf()
+{
+	if(!prv->configValues[aCpuThreadsConf]->IsArray())
+	return;
+
+	std::vector<jconf::thd_cfg> cpu_threads_conf;
+	for(const Value &oThdConf : prv->configValues[aCpuThreadsConf]->GetArray()) {
+		if(!oThdConf.IsObject())
+			break;
+
+		const Value *mode, *no_prefetch, *aff;
+		mode = GetObjectMember(oThdConf, "low_power_mode");
+		no_prefetch = GetObjectMember(oThdConf, "no_prefetch");
+		aff = GetObjectMember(oThdConf, "affine_to_cpu");
+
+		if(mode == nullptr || no_prefetch == nullptr || aff == nullptr)
+			return;
+
+		if(!mode->IsBool() || !no_prefetch->IsBool())
+			return;
+
+		if(!aff->IsNumber() && !aff->IsBool())
+			return;
+
+		if(aff->IsNumber() && aff->GetInt64() < 0)
+			return;
+
+		thd_cfg cfg;
+		cfg.bDoubleMode = mode->GetBool();
+		cfg.bNoPrefetch = no_prefetch->GetBool();
+
+		if(aff->IsNumber())
+			cfg.iCpuAff = aff->GetInt64();
+		else
+			cfg.iCpuAff = -1;
+
+		cpu_threads_conf.push_back(cfg);
+	}
+	setCpuThreadsConf(cpu_threads_conf);
+}
+
+void jconf::setCpuThreadsConf(std::vector<thd_cfg> aCpuThreadsConf)
+{
+	jconf::cfgItems->aCpuThreadsConf = aCpuThreadsConf;
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <stdlib.h>
 #include <string>
+#include <vector>
 
 class jconf
 {
@@ -60,6 +61,8 @@ public:
 
 	inline bool HaveHardwareAes() { return bHaveAes; }
 
+	void setCpuThreadsConf(std::vector<thd_cfg> aCpuThreadsConf);
+
 	static void cpuid(uint32_t eax, int32_t ecx, int32_t val[4]);
 
 private:
@@ -67,8 +70,33 @@ private:
 	static jconf* oInst;
 
 	bool check_cpu_features();
+
 	struct opaque_private;
 	opaque_private* prv;
+
+	struct cfg_items {
+		std::vector<thd_cfg> aCpuThreadsConf;
+		slow_mem_cfg sUseSlowMem;
+		bool bNiceHashMode;
+		bool bTlsMode;
+		bool bTlsSecureAlgo;
+		const char* sTlsFingerprint;
+		const char* sPoolAddr;
+		const char* sWalletAddr;
+		const char* sPoolPwd;
+		uint64_t iCallTimeout;
+		uint64_t iNetRetry;
+		uint64_t iGiveUpLimit;
+		uint64_t iVerboseLevel;
+		uint64_t iAutohashTime;
+		bool bDaemonMode;
+		const char* sOutputFile;
+		uint16_t iHttpdPort;
+		bool bPreferIpv4;
+	};
+	cfg_items* cfgItems = new cfg_items;
+
+	void parseCpuThreadsConf();
 
 	bool bHaveAes;
 };
